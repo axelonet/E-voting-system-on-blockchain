@@ -2,6 +2,7 @@ import Crypto
 from Crypto.PublicKey import RSA
 from Crypto import Random
 import base64
+import pickle as pk
 
 
 #Creating Private Key of 1024 bits and Public Key
@@ -38,10 +39,17 @@ def verify(publickey,data,sign):
 
 if __name__=='__main__':
      rpriv,rpub = rsakeys()
-     spriv,spub = rsakeys()
-     has = 'eee9ca050b625c9a8206beb29e5687d915f70aaa061993d9ea5bdf2041c66a26'
-     rl = bytes(has,'utf-8')
-     signed = sign(spriv,rl)
+     # spriv,spub = rsakeys()
+     # has = 'eee9ca050b625c9a8206beb29e5687d915f70aaa061993d9ea5bdf2041c66a26'
+     # rl = bytes(has,'utf-8')
+     # signed = sign(spriv,rl)
+     # print(signed)
+     #
+     # print(verify(spub,rl,signed))
+     msg = 'A new series about how this pandemic affects our lives, our loved ones, our work, and our way of life...'
+     signed = sign(rpriv,bytes(msg,'utf-8'))
      print(signed)
-
-     print(verify(spub,rl,signed))
+     print((pk._dumps(rpub)))
+     # keyback = pk._loads(pk._dumps(rpriv))
+     # newsigned = sign(keyback,bytes(msg,'utf-8'))
+     # print(newsigned==signed)

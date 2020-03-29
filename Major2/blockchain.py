@@ -20,9 +20,10 @@ BLOCK_TIME_LIMIT = 15 #--(seconds)
 class vote:
     count = 0
 
-    def __init__(self,hiddenvoterid,candidateID):
+    def __init__(self,hiddenvoterid,pubkey,candidateID):
         #--voterid hashed with PIN (ZKP)
         self.hiddenvoterid = hiddenvoterid
+        self.pubkey = pubkey
         self.candidate = candidateID
         self.time = time()
         vote.count+=1
@@ -38,7 +39,7 @@ class vote:
         #--now that whole data (the new votedata list) will be encrypted by AES encryption
         #-- and the shared key of AES will be encrypted with admin's public key
         #-- this data will be broadcasted and saved into the unconfirmed votepool and will be added in the block
-        return [aes.encrypt('***'.join(str(i) for i in self.votedata),voterkeys['aeskey']), enc.encrypt(Blockchain.adminpub,voterkeys['aeskey'])]
+        return [self.pubkey, aes.encrypt('***'.join(str(i) for i in self.votedata),voterkeys['aeskey']), enc.encrypt(Blockchain.adminpub,voterkeys['aeskey'])]
 
     #--keep track of no. of votes
     def inc_votecount(self):
@@ -50,7 +51,6 @@ class vote:
 
 
 class Blockchain:
-
 
     chain = []
 
@@ -158,7 +158,7 @@ class Block:
             with open('temp/votefile.csv', mode = 'r') as votepool:
                 csvreader = csv.reader(votepool)
                 for row in csvreader:
-                    votelist.append({'Vote Data':row[0],'Key':row[1]})
+                    votelist.append({'Voter\'s Public Key':row[0],'Vote Data':row[1],'Key':row[2]})
                     votecount+=1
             return votelist,votecount
 
@@ -236,13 +236,16 @@ def voter():
 #--hence his own keys will be generated.
     voterkeys['sk'],voterkeys['pk'] = enc.rsakeys()         #--voter public/private key pair generated
     choice = request.form['candidate']
-#--vote object created
-    v1 = vote(invisiblevoter, int(choice))
 
+#--vote object created
+    v1 = vote(invisiblevoter, pickle._dumps(voterkeys['pk']), int(choice))
+
+#--write data to the temporary pool
     with open('temp/votefile.csv','a',newline="") as votefile:
         writer = csv.writer(votefile)
         encvotedata = v1.encryptvote()
         writer.writerow(encvotedata)
+    #--and broadcast to other peers as well
     pp.connect_to_peer('192.168.0.135',9999,encvotedata)
 
 #---Current frequency to add and mine new blocks is after generation of every 4 votes
